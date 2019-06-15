@@ -15,6 +15,9 @@ from pandas.plotting import scatter_matrix
 import scipy.stats as stats
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
+from numpy.polynomial.polynomial import polyfit
+import statsmodels.stats.multicomp as multi
+
 
 #matplotlib inline
 sns.set_style('ticks')
@@ -92,10 +95,11 @@ df['Age'] = pd.to_numeric(df['Age'], errors='coerce')
 # Plot all in a for loop
 #fig, axes = plt.subplots(nrows=1, ncols=4)
 #for i in range(1,4):
-#    df.groupby(df.columns[i]).agg('count')[df.columns[0]].plot(kind='pie',ax=axes[i-1])
+    df.groupby(df.columns[i]).agg('count')[df.columns[0]].plot(kind='pie',ax=axes[i-1])
 
 #Two groups can be seen with low and high income. Girls maybe less paid and Divers at extremes
-df.groupby('Gender').Income.hist(alpha=0.4)
+df.groupby('Constraints').When_bio.hist(alpha=0.4)
+df.groupby('Constraints').agg('count')['When_bio'].plot(kind='pie')
 
 #Scatter matrix for visualization of correlations
 #Subset one answer questions
@@ -293,24 +297,73 @@ d_data = {grp:df['Bio_personality'][df.Gender == grp] for grp in grps}
 #N = len(df.values)  # conditions times participants
 #n = df.groupby('Gender').size()[0] #Participants in each condition
 F, p = stats.f_oneway(d_data[grps[0]], d_data[grps[1]])
+fig, ax = plt.subplots()
+ax = sns.boxplot(x='Gender', y='Bio_personality', data=df)
+# Add jitter with the swarmplot function.
+ax = sns.swarmplot(x='Gender', y='Bio_personality', data=df, color="grey")
+fig.savefig('Bio_personality_Gender.pdf')
 #2Nachhaltig-Children
 grps = pd.unique(df.Children.values)
 d_data = {grp:df['Bio_personality'][df.Children == grp] for grp in grps}
 F, p = stats.f_oneway(d_data[grps[0]], d_data[grps[1]])
+# Usual boxplot
+fig, ax = plt.subplots()
+ax = sns.boxplot(x='Children', y='Bio_personality', data=df)
+# Add jitter with the swarmplot function.
+ax = sns.swarmplot(x='Children', y='Bio_personality', data=df, color="grey")
+fig.savefig('Bio_personality_Children.pdf')
 #3Nachhaltig-Sozial&Umwelt wichtig
 grps = pd.unique(df.Consequence_relevance.values)
 d_data = {grp:df['Bio_personality'][df.Consequence_relevance == grp] for grp in grps}
 F, p = stats.f_oneway(d_data[grps[0]], d_data[grps[1]], d_data[grps[2]], d_data[grps[3]], d_data[grps[4]], d_data[grps[5]], d_data[grps[6]], d_data[grps[7]], d_data[grps[8]], d_data[grps[9]])
+#Post-hoc analysis
+posthoc=multi.MultiComparison(df['Bio_personality'],df['Consequence_relevance'])
+res1=posthoc.tukeyhsd()
+print(res1.summary())
+# Usual boxplot
+fig, ax = plt.subplots()
+ax = sns.boxplot(x='Consequence_relevance', y='Bio_personality', data=df)
+# Add jitter with the swarmplot function.
+ax = sns.swarmplot(x='Consequence_relevance', y='Bio_personality', data=df, color="grey")
+fig.savefig('Bio_personality_Consequence_relevance2.pdf')
+# Scatterplot
+fig, ax = plt.subplots()
+ax.scatter(df['Consequence_relevance'], df['Bio_personality'],
+            edgecolor='none', alpha=0.7,s=60)
+# Fit with polyfit
+b, m = polyfit(df['Consequence_relevance'], df['Bio_personality'], 1)
+plt.plot(df['Consequence_relevance'], b + m * df['Consequence_relevance'], '-')
+plt.show()
+fig.savefig('Bio_personality_consequence_relevance.pdf')
 #Nachhaltig-Siegel vertrauen
 grps = pd.unique(df.Stamp.values)
 d_data = {grp:df['Bio_personality'][df.Stamp == grp] for grp in grps}
 F, p = stats.f_oneway(d_data[grps[0]], d_data[grps[1]], d_data[grps[2]], d_data[grps[3]], d_data[grps[4]], d_data[grps[5]], d_data[grps[6]], d_data[grps[7]], d_data[grps[8]], d_data[grps[9]])
+#Tukey posthoc
+posthoc=multi.MultiComparison(df['Bio_personality'],df['Stamp'])
+res1=posthoc.tukeyhsd()
+print(res1.summary())
+#Plot
+fig, ax = plt.subplots()
+ax = sns.boxplot(x='Stamp', y='Bio_personality', data=df)
+# Add jitter with the swarmplot function.
+ax = sns.swarmplot(x='Stamp', y='Bio_personality', data=df, color="grey")
+plt.savefig('Bio_personality_Stamp.pdf')
 #Image_bio-When_bio/Criteria_expensive(Willing2pay) Categorical-Categorical -> Chi2
 #Nachhaltig-Consequences/Consequence_relevance(Knowledge&consequences)
 grps = pd.unique(df.Consequences.values)
 d_data = {grp:df['Bio_personality'][df.Consequences == grp] for grp in grps}
 F, p = stats.f_oneway(d_data[grps[0]], d_data[grps[1]], d_data[grps[2]])
-
+#Tukey posthoc
+posthoc=multi.MultiComparison(df['Bio_personality'],df['Consequences'])
+res1=posthoc.tukeyhsd()
+print(res1.summary())
+#Plot
+fig, ax = plt.subplots()
+ax = sns.boxplot(x='Consequences', y='Bio_personality', data=df)
+# Add jitter with the swarmplot function.
+ax = sns.swarmplot(x='Consequences', y='Bio_personality', data=df, color="grey")
+fig.savefig('Bio_personality_Consequences.pdf')
 
 ################# Other alternatives to linear PCA ########################
 
